@@ -26,18 +26,22 @@ fi
 mkdir .tmp/
 
 #Download and generate MobileVLCKit
-wget -O .tmp/MobileVLCKit.tar.xz $IOS_URL
-tar -xf .tmp/MobileVLCKit.tar.xz -C .tmp/
+echo "Downloading MobileVLCKit..."
+wget -q --show-progress -O .tmp/MobileVLCKit.tar.xz $IOS_URL
+echo "Extracting MobileVLCKit..."
+tar -xf .tmp/MobileVLCKit.tar.xz -C .tmp/ 2>/dev/null
 
 #Download and generate VLCKit
-wget -O .tmp/VLCKit.tar.xz $MACOS_URL
-tar -xf .tmp/VLCKit.tar.xz -C .tmp/
-#Special case to include missing header file
-cp ".tmp/MobileVLCKit-binary/MobileVLCKit.xcframework/ios-arm64_i386_x86_64-simulator/MobileVLCKit.framework/Headers/VLCDialogProvider.h" ".tmp/VLCKit - binary package/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework/Headers/VLCDialogProvider.h"
+echo "Downloading VLCKit..."
+wget -q --show-progress -O .tmp/VLCKit.tar.xz $MACOS_URL
+echo "Extracting VLCKit..."
+tar -xf .tmp/VLCKit.tar.xz -C .tmp/ 2>/dev/null
 
 #Download and generate TVVLCKit
-wget -O .tmp/TVVLCKit.tar.xz $TVOS_URL
-tar -xf .tmp/TVVLCKit.tar.xz -C .tmp/
+echo "Downloading TVVLCKit..."
+wget -q --show-progress -O .tmp/TVVLCKit.tar.xz $TVOS_URL
+echo "Extracting TVVLCKit..."
+tar -xf .tmp/TVVLCKit.tar.xz -C .tmp/ 2>/dev/null
 
 IOS_LOCATION=".tmp/MobileVLCKit-binary/MobileVLCKit.xcframework"
 TVOS_LOCATION=".tmp/TVVLCKit-binary/TVVLCKit.xcframework"
@@ -61,6 +65,10 @@ ditto -c -k --sequesterRsrc --keepParent ".tmp/VLCKit-all.xcframework" ".tmp/VLC
 
 #Update package file
 PACKAGE_HASH=$(sha256sum ".tmp/VLCKit-all.xcframework.zip" | awk '{ print $1 }')
+if [ -z "$PACKAGE_HASH" ]; then
+  echo "Error: Failed to calculate the hash of the xcframework"
+  exit 1
+fi
 PACKAGE_STRING="Target.binaryTarget(name: \"VLCKit-all\", url: \"https:\/\/github.com\/vvisionnn\/vlckit-spm\/releases\/download\/$TAG_VERSION\/VLCKit-all.xcframework.zip\", checksum: \"$PACKAGE_HASH\")"
 echo "Changing package definition for xcframework with hash $PACKAGE_HASH"
 sed -i '' -e "s/let vlcBinary.*/let vlcBinary = $PACKAGE_STRING/" Package.swift
