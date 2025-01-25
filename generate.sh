@@ -27,19 +27,19 @@ mkdir .tmp/
 
 #Download and generate MobileVLCKit
 echo "Downloading MobileVLCKit..."
-wget -q --show-progress -O .tmp/MobileVLCKit.tar.xz $IOS_URL
+wget -q -O .tmp/MobileVLCKit.tar.xz $IOS_URL
 echo "Extracting MobileVLCKit..."
 tar -xf .tmp/MobileVLCKit.tar.xz -C .tmp/ 2>/dev/null
 
 #Download and generate VLCKit
 echo "Downloading VLCKit..."
-wget -q --show-progress -O .tmp/VLCKit.tar.xz $MACOS_URL
+wget -q -O .tmp/VLCKit.tar.xz $MACOS_URL
 echo "Extracting VLCKit..."
 tar -xf .tmp/VLCKit.tar.xz -C .tmp/ 2>/dev/null
 
 #Download and generate TVVLCKit
 echo "Downloading TVVLCKit..."
-wget -q --show-progress -O .tmp/TVVLCKit.tar.xz $TVOS_URL
+wget -q -O .tmp/TVVLCKit.tar.xz $TVOS_URL
 echo "Extracting TVVLCKit..."
 tar -xf .tmp/TVVLCKit.tar.xz -C .tmp/ 2>/dev/null
 
@@ -64,7 +64,7 @@ xcodebuild -create-xcframework \
 ditto -c -k --sequesterRsrc --keepParent ".tmp/VLCKit-all.xcframework" ".tmp/VLCKit-all.xcframework.zip"
 
 #Update package file
-PACKAGE_HASH=$(sha256sum ".tmp/VLCKit-all.xcframework.zip" | awk '{ print $1 }')
+PACKAGE_HASH=$(shasum -a 256 ".tmp/VLCKit-all.xcframework.zip" | awk '{ print $1 }')
 if [ -z "$PACKAGE_HASH" ]; then
   echo "Error: Failed to calculate the hash of the xcframework"
   exit 1
