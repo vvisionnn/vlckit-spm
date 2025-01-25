@@ -2,10 +2,26 @@
 #
 rm -rf .tmp/ || true
 
-TAG_VERSION="v3.5.1"
-IOS_URL="https://download.videolan.org/pub/cocoapods/prod/MobileVLCKit-3.5.1-34408b84-e9eceaed.tar.xz"
-MACOS_URL="https://download.videolan.org/pub/cocoapods/prod/VLCKit-3.5.1-34408b84-e9eceaed.tar.xz"
-TVOS_URL="https://download.videolan.org/cocoapods/prod/TVVLCKit-3.5.1-34408b84-e9eceaed.tar.xz"
+# Check if required environment variables are set and not empty
+if [ -z "${TAG_VERSION}" ]; then
+  echo "Error: TAG_VERSION environment variable is not set"
+  exit 1
+fi
+
+if [ -z "${IOS_URL}" ]; then
+  echo "Error: IOS_URL environment variable is not set"
+  exit 1
+fi
+
+if [ -z "${MACOS_URL}" ]; then
+  echo "Error: MACOS_URL environment variable is not set"
+  exit 1
+fi
+
+if [ -z "${TVOS_URL}" ]; then
+  echo "Error: TVOS_URL environment variable is not set"
+  exit 1
+fi
 
 mkdir .tmp/
 
@@ -29,23 +45,23 @@ MACOS_LOCATION=".tmp/VLCKit - binary package/VLCKit.xcframework"
 
 #Merge into one xcframework
 xcodebuild -create-xcframework \
-    -framework "$MACOS_LOCATION/macos-arm64_x86_64/VLCKit.framework" \
-    -debug-symbols "${PWD}/$MACOS_LOCATION/macos-arm64_x86_64/dSYMs/VLCKit.framework.dSYM" \
-    -framework "$TVOS_LOCATION/tvos-arm64_x86_64-simulator/TVVLCKit.framework" \
-    -debug-symbols "${PWD}/$TVOS_LOCATION/tvos-arm64_x86_64-simulator/dSYMs/TVVLCKit.framework.dSYM" \
-    -framework "$TVOS_LOCATION/tvos-arm64/TVVLCKit.framework"  \
-    -debug-symbols "${PWD}/$TVOS_LOCATION/tvos-arm64/dSYMs/TVVLCKit.framework.dSYM" \
-    -framework "$IOS_LOCATION/ios-arm64_i386_x86_64-simulator/MobileVLCKit.framework" \
-    -debug-symbols "${PWD}/$IOS_LOCATION/ios-arm64_i386_x86_64-simulator/dSYMs/MobileVLCKit.framework.dSYM" \
-    -framework "$IOS_LOCATION/ios-arm64_armv7_armv7s/MobileVLCKit.framework" \
-    -debug-symbols "${PWD}/$IOS_LOCATION/ios-arm64_armv7_armv7s/dSYMs/MobileVLCKit.framework.dSYM" \
-    -output .tmp/VLCKit-all.xcframework
-    
+  -framework "$MACOS_LOCATION/macos-arm64_x86_64/VLCKit.framework" \
+  -debug-symbols "${PWD}/$MACOS_LOCATION/macos-arm64_x86_64/dSYMs/VLCKit.framework.dSYM" \
+  -framework "$TVOS_LOCATION/tvos-arm64_x86_64-simulator/TVVLCKit.framework" \
+  -debug-symbols "${PWD}/$TVOS_LOCATION/tvos-arm64_x86_64-simulator/dSYMs/TVVLCKit.framework.dSYM" \
+  -framework "$TVOS_LOCATION/tvos-arm64/TVVLCKit.framework" \
+  -debug-symbols "${PWD}/$TVOS_LOCATION/tvos-arm64/dSYMs/TVVLCKit.framework.dSYM" \
+  -framework "$IOS_LOCATION/ios-arm64_i386_x86_64-simulator/MobileVLCKit.framework" \
+  -debug-symbols "${PWD}/$IOS_LOCATION/ios-arm64_i386_x86_64-simulator/dSYMs/MobileVLCKit.framework.dSYM" \
+  -framework "$IOS_LOCATION/ios-arm64_armv7_armv7s/MobileVLCKit.framework" \
+  -debug-symbols "${PWD}/$IOS_LOCATION/ios-arm64_armv7_armv7s/dSYMs/MobileVLCKit.framework.dSYM" \
+  -output .tmp/VLCKit-all.xcframework
+
 ditto -c -k --sequesterRsrc --keepParent ".tmp/VLCKit-all.xcframework" ".tmp/VLCKit-all.xcframework.zip"
 
 #Update package file
 PACKAGE_HASH=$(sha256sum ".tmp/VLCKit-all.xcframework.zip" | awk '{ print $1 }')
-PACKAGE_STRING="Target.binaryTarget(name: \"VLCKit-all\", url: \"https:\/\/github.com\/tylerjonesio\/vlckit-spm\/releases\/download\/$TAG_VERSION\/VLCKit-all.xcframework.zip\", checksum: \"$PACKAGE_HASH\")"
+PACKAGE_STRING="Target.binaryTarget(name: \"VLCKit-all\", url: \"https:\/\/github.com\/vvisionnn\/vlckit-spm\/releases\/download\/$TAG_VERSION\/VLCKit-all.xcframework.zip\", checksum: \"$PACKAGE_HASH\")"
 echo "Changing package definition for xcframework with hash $PACKAGE_HASH"
 sed -i '' -e "s/let vlcBinary.*/let vlcBinary = $PACKAGE_STRING/" Package.swift
 

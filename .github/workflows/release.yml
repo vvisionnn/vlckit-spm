@@ -1,0 +1,71 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_version:
+        description: "Version tag (e.g. 3.6.0)"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Validate input
+        run: |
+          if [ -z "${{ github.event.inputs.tag_version }}" ]; then
+            echo "Error: Tag version is required"
+            exit 1
+          fi
+
+      - name: Fetch VLCKit URLs
+        id: vlc_urls
+        run: |
+          # Fetch URLs from VideoLAN JSON files
+          VLCKIT_URL=$(curl -s "https://code.videolan.org/videolan/VLCKit/-/raw/master/Packaging/VLCKit.json?ref_type=heads" | 
+          jq -r --arg VERSION "${{ github.event.inputs.tag_version }}" '.[$VERSION]')
+          MOBILEVLCKIT_URL=$(curl -s "https://code.videolan.org/videolan/VLCKit/-/raw/master/Packaging/MobileVLCKit.json?ref_type=heads" | 
+          jq -r --arg VERSION "${{ github.event.inputs.tag_version }}" '.[$VERSION]')
+          TVVLCKIT_URL=$(curl -s "https://code.videolan.org/videolan/VLCKit/-/raw/master/Packaging/TVVLCKit.json?ref_type=heads" | 
+          jq -r --arg VERSION "${{ github.event.inputs.tag_version }}" '.[$VERSION]')
+
+          # Validate URLs
+          if [ "$VLCKIT_URL" = "null" ] || [ "$MOBILEVLCKIT_URL" = "null" ] || [ "$TVVLCKIT_URL" = "null" ]; then
+            echo "Error: Could not find URLs for version ${{ github.event.inputs.tag_version }}"
+            exit 1
+          fi
+
+          # Set outputs
+          echo "macos_url=${VLCKIT_URL}" >> $GITHUB_OUTPUT
+          echo "ios_url=${MOBILEVLCKIT_URL}" >> $GITHUB_OUTPUT
+          echo "tvos_url=${TVVLCKIT_URL}" >> $GITHUB_OUTPUT
+
+      - name: Run generate script
+        env:
+          TAG_VERSION: ${{ github.event.inputs.tag_version }}
+          MACOS_URL: ${{ steps.vlc_urls.outputs.macos_url }}
+          IOS_URL: ${{ steps.vlc_urls.outputs.ios_url }}
+          TVOS_URL: ${{ steps.vlc_urls.outputs.tvos_url }}
+        run: |
+          chmod +x ./generate.sh
+          ./generate.sh
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "release ${{ github.event.inputs.tag_version }}"
+          git push origin HEAD
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: .tmp/VLCKit-all.xcframework.zip
+          tag_name: ${{ github.event.inputs.tag_version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
